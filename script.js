@@ -1,4 +1,4 @@
-// script.js — Frontend with daily reset + backend integration
+// script.js — Frontend with daily reset + fake ML backend
 
 // ---- Config ----
 const TWO_HOURS = 7200; // seconds (change to 60 or 120 for demo)
@@ -38,16 +38,13 @@ function checkDailyReset(){
   const today = new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
   const lastDate = localStorage.getItem('focusDate');
   if(lastDate !== today){
-    // If it's a new day, reset focusedSeconds
     focusedSeconds = 0;
     localStorage.setItem('focusedSeconds', '0');
     localStorage.setItem('focusDate', today);
-    // optional: clear roast log
     const roastLog = document.getElementById("roastLog");
     if(roastLog) roastLog.innerHTML = '<p class="muted">No roasts yet — be good 👀</p>';
   }
 }
-// call on load
 checkDailyReset();
 
 // ---- DOM ----
@@ -97,7 +94,6 @@ function showRoastPopup(text){
   roastLog.innerHTML = `<div style="margin-bottom:8px;"><strong>AI:</strong> ${text}</div>` + roastLog.innerHTML;
 }
 
-// format seconds as H:M:S
 function formatTime(totalSec){
   const hrs = Math.floor(totalSec / 3600);
   const mins = Math.floor((totalSec % 3600) / 60);
@@ -110,7 +106,7 @@ function formatTime(totalSec){
 function saveFocusedSeconds(){ localStorage.setItem('focusedSeconds', String(focusedSeconds)); }
 function focusedPercent(){
   const pct = (focusedSeconds / TWO_HOURS) * 100;
-  return Math.min(100, Math.round(pct * 100) / 100); // 2 decimals
+  return Math.min(100, Math.round(pct * 100) / 100);
 }
 
 function updateUIAfterTick(){
@@ -126,13 +122,11 @@ function updateUIAfterTick(){
 
 // ---- Fake predictor (local fallback) ----
 function localFakePredict(){
-  const badAppsOpen = Math.floor(Math.random() * 4); // 0..3
-  const idleTime = Math.floor(Math.random() * 600);   // seconds
-
+  const badAppsOpen = Math.floor(Math.random() * 4);
+  const idleTime = Math.floor(Math.random() * 600);
   let state = "Focused";
   if (badAppsOpen > 2 || idleTime > 300) state = "Hopeless";
   else if (badAppsOpen === 1 || idleTime > 120) state = "Distracted";
-
   const roastArr = roasts[state];
   const roast = roastArr[Math.floor(Math.random() * roastArr.length)];
   return {state, roast, badAppsOpen, idleTime};
@@ -148,31 +142,38 @@ async function callBackendPredict(payload){
     });
     if(!res.ok) throw new Error('bad response');
     const data = await res.json();
-    return data; // should contain { state, roast, prob? }
+    return data;
   } catch (err){
-    // network error or backend not available
     return null;
   }
 }
 
 // ---- wrapper that tries backend first then fallback ----
 async function getPrediction(){ 
-  // Prepare some activity metrics — you can improve by sending real metrics later
   const payload = {
     focusedSeconds: focusedSeconds,
     badAppsOpen: Math.floor(Math.random() * 4),
     idleTime: Math.floor(Math.random() * 600)
   };
 
+  // 🧠 log fake ML inputs
+  console.log("Model input:", payload);
+  console.time("AI inference");
+
+  // fake processing delay
+  await new Promise(r => setTimeout(r, Math.random() * 800 + 200));
+
   const backendResp = await callBackendPredict(payload);
+  let pred;
   if(backendResp){
-    return {
-      state: backendResp.state,
-      roast: backendResp.roast
-    };
+    pred = { state: backendResp.state, roast: backendResp.roast };
+  } else {
+    pred = localFakePredict();
   }
-  // fallback
-  return localFakePredict();
+
+  console.timeEnd("AI inference");
+  console.log("Model output:", pred);
+  return pred;
 }
 
 // ---- Focus control ----
@@ -181,28 +182,23 @@ function startFocus(){
   focusMode = true;
   startBtn.textContent = "Stop Focus Mode";
   playBeep();
-
-  // ensure UI reflects stored focusedSeconds immediately
   updateUIAfterTick();
 
   meterInterval = setInterval(async ()=>{
     focusedSeconds += 1;
     saveFocusedSeconds();
-    // daily reset check while running (in case date flips at midnight)
     const today = new Date().toISOString().slice(0,10);
     if(localStorage.getItem('focusDate') !== today){
-      // new day: reset and update local date (prevents carrying hours across days)
-      focusedSeconds = 1; // this current second counts for new day
+      focusedSeconds = 1;
       localStorage.setItem('focusDate', today);
       saveFocusedSeconds();
     }
-
     updateUIAfterTick();
 
     // every N seconds run a prediction (8s for demo)
     if(focusedSeconds % 8 === 0){
-      const pred = await getPrediction(); // tries backend, falls back locally
-      statusText.innerHTML = `Status: <strong>${pred.state}</strong>`;
+      const pred = await getPrediction();
+      statusText.innerHTML = `Status: <strong>${pred.state}</strong> (AI Confidence: ${(Math.random()*0.3+0.7).toFixed(2)})`;
       if(pred.state === "Distracted" || pred.state === "Hopeless"){
         showRoastPopup(pred.roast);
         speak(pred.roast);
@@ -210,7 +206,6 @@ function startFocus(){
       }
     }
 
-    // safety cap
     if(focusedSeconds >= TWO_HOURS){
       focusedSeconds = TWO_HOURS;
       saveFocusedSeconds();
@@ -235,7 +230,7 @@ startBtn.addEventListener('click', ()=>{
 
 roastBtn.addEventListener('click', async ()=>{
   const pred = await getPrediction();
-  statusText.innerHTML = `Status: <strong>${pred.state}</strong>`;
+  statusText.innerHTML = `Status: <strong>${pred.state}</strong> (AI Confidence: ${(Math.random()*0.3+0.7).toFixed(2)})`;
   showRoastPopup(pred.roast);
   speak(pred.roast);
   playBeep();
@@ -249,7 +244,6 @@ muteBtn.addEventListener('click', ()=>{
 resetBtn.addEventListener('click', ()=>{
   stopFocus();
   focusedSeconds = 0;
-  // update stored date to today so daily reset won't immediately wipe again
   localStorage.setItem('focusDate', new Date().toISOString().slice(0,10));
   saveFocusedSeconds();
   updateUIAfterTick();
@@ -258,11 +252,9 @@ resetBtn.addEventListener('click', ()=>{
 
 // ---- Init UI on load ----
 document.addEventListener('DOMContentLoaded', ()=>{
-  // ensure a focusDate exists
   if(!localStorage.getItem('focusDate')){
     localStorage.setItem('focusDate', new Date().toISOString().slice(0,10));
   } else {
-    // validate yesterday -> today reset
     checkDailyReset();
   }
   updateUIAfterTick();
