@@ -1,3 +1,6 @@
+IAS Ki Padhai Chhodd Do Tum 🙏
+
+
 🤌 What's This Sorcery?
 Bestie, this is an eye-tracking system that literally JUDGES you for not studying. It uses your phone camera (via DroidCam) to watch you procrastinate in real-time. Yes, we've reached that point in life where we need an AI to roast us for watching "just one more" YouTube video.
 
