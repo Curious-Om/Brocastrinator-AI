@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ProcrastinAI — Your Focus Guardian</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <main class="card">
+    <header class="card-header">
+      <div class="logo">🧠 <span>ProcrastinAI</span></div>
+      <div class="controls">
+        <button id="muteBtn" class="tiny">🔊</button>
+        <button id="resetBtn" class="tiny">⟲</button>
+      </div>
+    </header>
+
+    <section class="content">
+      <h1 class="title">The Roast-Based Focus Guardian</h1>
+
+      <div class="meter-wrap">
+        <div id="focusMeter" class="meter">
+          <div id="meterFill" class="meter-fill"></div>
+        </div>
+        <div class="meter-labels">
+          <span id="statusText">Status: <strong>Idle 😴</strong></span>
+          <span id="timeText">0s</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="startBtn" class="cta">Start Focus Mode</button>
+        <button id="roastBtn" class="ghost">Roast Me Now</button>
+      </div>
+
+      <div id="roastLog" class="roast-log">
+        <p class="muted">No roasts yet — be good 👀</p>
+      </div>
+    </section>
+
+    <footer class="card-footer">
+      <small>We can’t stop procrastinating — but at least our AI can bully us back to focus.</small>
+    </footer>
+  </main>
+
+  <!-- Roast popup (hidden by default, controlled by JS) -->
+  <div id="roastPopup" class="roast-popup" aria-live="polite">
+    <div class="popup-inner">
+      <div class="popup-emoji">😈</div>
+      <div id="popupText" class="popup-text">You look distracted.</div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
